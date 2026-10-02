@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Pedidos</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #ffffff; --text: #1b1b1a; --muted: #6b6a66;
+    --line: #e4e2dc; --accent: #1f6f5c; --accent-soft: #e3f0ec;
+    --warn: #a86a12; --warn-soft: #fbf0dc; --info: #2a5ea8; --info-soft: #e5edf8;
+    --bad: #a83a2a; --bad-soft: #f8e6e3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121211; --surface: #1c1c1a; --text: #ecebe7; --muted: #9a9892;
+      --line: #2e2d2a; --accent: #5cc0a4; --accent-soft: #1a2f29;
+      --warn: #e2a94f; --warn-soft: #34291a; --info: #7fa8e6; --info-soft: #1b2535;
+      --bad: #e8806f; --bad-soft: #36201c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: -0.02em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text); padding: 8px 14px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #0d1f1a; } }
+  button:hover { filter: brightness(0.96); }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .kpi span { color: var(--muted); font-size: 13px; }
+  .kpi strong { display: block; font-size: 26px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px; border-bottom: 1px solid var(--line); }
+  .toolbar input, .toolbar select, form input, form select {
+    font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); }
+  .toolbar input { flex: 1; min-width: 180px; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
+  tr:last-child td { border-bottom: 0; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 500; border: 0; }
+  .s-pendente { background: var(--warn-soft); color: var(--warn); }
+  .s-enviado { background: var(--info-soft); color: var(--info); }
+  .s-entregue { background: var(--accent-soft); color: var(--accent); }
+  .s-cancelado { background: var(--bad-soft); color: var(--bad); }
+  .del { border: 0; background: none; color: var(--muted); padding: 4px 8px; }
+  .del:hover { color: var(--bad); }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+
+  dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text);
+    padding: 24px; width: min(440px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,0.4); }
+  dialog h2 { margin: 0 0 16px; font-size: 18px; }
+  form label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  form input, form select { display: block; width: 100%; margin-top: 4px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .actions { display: flex; justify-content: end; gap: 8px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Painel de Pedidos</h1>
+      <p>Versão local — os dados ficam salvos neste navegador.</p>
+    </div>
+    <button class="primary" id="novo">+ Novo pedido</button>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><span>Total de pedidos</span><strong id="k-total">0</strong></div>
+    <div class="kpi"><span>Faturamento</span><strong id="k-fat">R$ 0,00</strong></div>
+    <div class="kpi"><span>Ticket médio</span><strong id="k-ticket">R$ 0,00</strong></div>
+    <div class="kpi"><span>Pendentes</span><strong id="k-pend">0</strong></div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <input id="busca" type="search" placeholder="Buscar cliente ou produto…">
+      <select id="filtro">
+        <option value="">Todos os status</option>
+        <option>Pendente</option><option>Enviado</option><option>Entregue</option><option>Cancelado</option>
+      </select>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Data</th><th>Cliente</th><th>Produto</th><th class="num">Valor</th><th>Status</th><th></th></tr></thead>
+        <tbody id="linhas"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="vazio" hidden>Nenhum pedido encontrado.</div>
+  </section>
+</div>
+
+<dialog id="dlg">
+  <form id="form" method="dialog">
+    <h2>Novo pedido</h2>
+    <label>Cliente<input name="cliente" required></label>
+    <label>Produto<input name="produto" required></label>
+    <div class="row">
+      <label>Valor (R$)<input name="valor" type="number" step="0.01" min="0" required></label>
+      <label>Data<input name="data" type="date" required></label>
+    </div>
+    <label>Status
+      <select name="status"><option>Pendente</option><option>Enviado</option><option>Entregue</option><option>Cancelado</option></select>
+    </label>
+    <div class="actions">
+      <button type="button" id="cancelar">Cancelar</button>
+      <button class="primary" type="submit">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  const CHAVE = "painel-pedidos-v1";
+  const STATUS = ["Pendente", "Enviado", "Entregue", "Cancelado"];
+  const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const hoje = () => new Date().toISOString().slice(0, 10);
+
+  const exemplo = [
+    { id: 1, data: "2026-09-24", cliente: "Ana Souza", produto: "Camiseta básica", valor: 59.9, status: "Entregue" },
+    { id: 2, data: "2026-09-26", cliente: "Bruno Lima", produto: "Tênis casual", valor: 289.0, status: "Enviado" },
+    { id: 3, data: "2026-09-28", cliente: "Carla Mendes", produto: "Mochila", valor: 149.5, status: "Pendente" },
+    { id: 4, data: "2026-09-29", cliente: "Diego Alves", produto: "Boné", valor: 45.0, status: "Cancelado" },
+    { id: 5, data: "2026-09-30", cliente: "Elisa Rocha", produto: "Jaqueta jeans", valor: 219.9, status: "Pendente" }
+  ];
+
+  function carregar() {
+    try { const s = localStorage.getItem(CHAVE); if (s) return JSON.parse(s); } catch (e) {}
+    return exemplo.slice();
+  }
+  function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(pedidos)); } catch (e) {} }
+
+  let pedidos = carregar();
+  const $ = id => document.getElementById(id);
+
+  function render() {
+    const termo = $("busca").value.trim().toLowerCase();
+    const filtro = $("filtro").value;
+    const lista = pedidos
+      .filter(p => !filtro || p.status === filtro)
+      .filter(p => !termo || (p.cliente + " " + p.produto).toLowerCase().includes(termo))
+      .sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
+
+    $("linhas").innerHTML = lista.map(p => `
+      <tr>
+        <td>${p.id}</td>
+        <td>${p.data.split("-").reverse().join("/")}</td>
+        <td>${esc(p.cliente)}</td>
+        <td>${esc(p.produto)}</td>
+        <td class="num">${brl(p.valor)}</td>
+        <td><button class="badge s-${p.status.toLowerCase()}" data-ciclo="${p.id}" title="Clique para mudar o status">${p.status}</button></td>
+        <td><button class="del" data-del="${p.id}" title="Excluir">✕</button></td>
+      </tr>`).join("");
+    $("vazio").hidden = lista.length > 0;
+
+    const validos = pedidos.filter(p => p.status !== "Cancelado");
+    const fat = validos.reduce((s, p) => s + p.valor, 0);
+    $("k-total").textContent = pedidos.length;
+    $("k-fat").textContent = brl(fat);
+    $("k-ticket").textContent = brl(validos.length ? fat / validos.length : 0);
+    $("k-pend").textContent = pedidos.filter(p => p.status === "Pendente").length;
+  }
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  $("linhas").addEventListener("click", e => {
+    const ciclo = e.target.dataset.ciclo, del = e.target.dataset.del;
+    if (ciclo) {
+      const p = pedidos.find(x => x.id == ciclo);
+      p.status = STATUS[(STATUS.indexOf(p.status) + 1) % STATUS.length];
+    } else if (del) {
+      pedidos = pedidos.filter(x => x.id != del);
+    } else return;
+    salvar(); render();
+  });
+
+  $("busca").addEventListener("input", render);
+  $("filtro").addEventListener("change", render);
+  $("novo").addEventListener("click", () => { $("form").reset(); $("form").data.value = hoje(); $("dlg").showModal(); });
+  $("cancelar").addEventListener("click", () => $("dlg").close());
+  $("form").addEventListener("submit", () => {
+    const f = $("form");
+    const id = pedidos.reduce((m, p) => Math.max(m, p.id), 0) + 1;
+    pedidos.push({ id, data: f.data.value, cliente: f.cliente.value.trim(), produto: f.produto.value.trim(),
+      valor: parseFloat(f.valor.value) || 0, status: f.status.value });
+    salvar(); render();
+  });
+
+  render();
+</script>
+</body>
+</html>
