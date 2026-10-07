@@ -1,26 +1,304 @@
 @import "tailwindcss";
 
+/*
+ * Identidade visual
+ * ------------------------------------------------------------
+ * ameixa (#75616b) é a cor principal obrigatória. Ela aparece com força em
+ * poucos lugares (faixa de apresentação, botões principais, rodapé) e o resto
+ * da página fica claro e calmo, para as fotos dos produtos brilharem.
+ * O detalhe marcante é a borda recortada em ondinhas, que lembra as forminhas
+ * de papel dos docinhos.
+ */
+@theme {
+  --color-ameixa: #75616b;
+  --color-ameixa-funda: #5b4a53;
+  --color-ameixa-clara: #a8949e;
+  --color-veu: #f3ecef;
+  --color-acucar: #fbf8f9;
+  --color-glace: #ffffff;
+  --color-calda: #2e2429;
+  --color-suave: #6b5d64;
+  --color-linha: #e6dce1;
+  /* Cor de textos/links de destaque (ameixa escura no claro, ameixa clara no escuro). */
+  --color-tinta: #5b4a53;
+
+  --color-ok: #3f6b4f;
+  --color-ok-fundo: #eaf3ec;
+  --color-alerta: #7a5b16;
+  --color-alerta-fundo: #fbf3df;
+  --color-erro: #a33a3a;
+  --color-erro-fundo: #fbeaea;
+  --color-info: #2f5d8a;
+  --color-info-fundo: #e8f0f8;
+  --color-forno: #8a4b2a;
+  --color-forno-fundo: #f8ece4;
+
+  --font-display: var(--font-young-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-card: 1.25rem;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/*
+ * Modo noturno: ativado pelo botão de lua/sol (atributo data-theme no <html>).
+ * A cor ameixa continua sendo a base; só fundos, textos e tons de apoio mudam.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ameixa-funda: #3e3238;
+  --color-ameixa-clara: #8f7a85;
+  --color-veu: #30262b;
+  --color-acucar: #1a1418;
+  --color-glace: #241c20;
+  --color-calda: #f3ecef;
+  --color-suave: #c2b3ba;
+  --color-linha: #3d3137;
+  --color-tinta: #e2d2da;
+
+  --color-ok: #8fd0a2;
+  --color-ok-fundo: #1d3325;
+  --color-alerta: #e8c873;
+  --color-alerta-fundo: #372d17;
+  --color-erro: #f2a3a3;
+  --color-erro-fundo: #3d2020;
+  --color-info: #a3c6ef;
+  --color-info-fundo: #1c2a3b;
+  --color-forno: #eeb08a;
+  --color-forno-fundo: #3a271c;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-acucar);
+  color: var(--color-calda);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+/* Foco visível para quem navega pelo teclado. */
+:focus-visible {
+  outline: 3px solid var(--color-ameixa);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  /* Ondinhas de forminha: meia-lua repetida pendurada sob um bloco de cor. */
+  .scallop {
+    height: 14px;
+    background: radial-gradient(circle at 50% 0, var(--scallop-color, var(--color-ameixa)) 13px, transparent 13.5px)
+      0 0 / 28px 14px repeat-x;
+  }
+  .scallop-up {
+    height: 14px;
+    background: radial-gradient(circle at 50% 100%, var(--scallop-color, var(--color-ameixa-funda)) 13px, transparent 13.5px)
+      0 0 / 28px 14px repeat-x;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1.0625rem;
+    line-height: 1.2;
+    text-align: center;
+    transition:
+      background-color 150ms,
+      color 150ms,
+      border-color 150ms,
+      transform 150ms;
+    cursor: pointer;
+    user-select: none;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-ameixa);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #5b4a53;
+  }
+  /* Botão claro usado sobre a faixa ameixa: igual nos dois modos. */
+  .btn-light {
+    background: #fff;
+    color: #5b4a53;
+  }
+  .btn-light:hover:not(:disabled) {
+    background: #f3ecef;
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--color-tinta);
+    border: 2px solid var(--color-ameixa);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-veu);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-tinta);
+    min-height: 2.75rem;
+    padding: 0.5rem 0.9rem;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-veu);
+  }
+  .btn-danger {
+    background: #a33a3a;
+    color: #fff;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: #862e2e;
+  }
+  .btn-sm {
+    min-height: 2.5rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .field-label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  .field-hint {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--color-suave);
+    margin-top: 0.3rem;
+  }
+  .field-error {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--color-erro);
+    margin-top: 0.35rem;
+    font-weight: 700;
+  }
+  .input {
+    display: block;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 0.75rem;
+    border: 1.5px solid var(--color-linha);
+    background: var(--color-glace);
+    color: var(--color-calda);
+    font-size: 1.0625rem; /* ≥16px evita zoom automático no iPhone */
+    transition: border-color 150ms;
+  }
+  .input:hover {
+    border-color: var(--color-ameixa-clara);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-ameixa);
+    box-shadow: 0 0 0 3px rgb(117 97 107 / 0.18);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-erro);
+  }
+  textarea.input {
+    min-height: 6rem;
+    resize: vertical;
+  }
+
+  .card {
+    background: var(--color-glace);
+    border: 1px solid var(--color-linha);
+    border-radius: var(--radius-card);
+  }
+
+  .container-page {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-veu), var(--color-glace), var(--color-veu));
+    background-size: 200% 100%;
+    animation: skeleton 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 320ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-toast {
+  animation: toast-in 200ms ease-out;
 }

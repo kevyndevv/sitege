@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Site de encomendas — doces e salgados
 
-## Getting Started
+Site onde clientes fazem encomendas **sem criar conta**, acompanham o pedido com
+um código secreto, e a dona gerencia tudo por um **painel protegido**.
 
-First, run the development server:
+- **Next.js 16** (App Router) + **React 19** + **TypeScript** + **Tailwind CSS 4**
+- **Supabase**: Postgres, Auth (login da dona) e Storage (fotos)
+- Cor principal da identidade: `#75616b`
+
+> O arquivo `site-local.html` (painel antigo que salvava no navegador) foi
+> mantido sem alterações. Ele não é usado pelo site novo.
+
+---
+
+## 1. Configurar o Supabase (uma vez)
+
+1. Abra o projeto em <https://supabase.com/dashboard> → **SQL Editor** → **New query**.
+2. Rode, **nesta ordem**, cada arquivo de `supabase/migrations/` (cole o conteúdo e clique em **Run**):
+   `20261007000000_encomendas.sql`, `20261007010000_restringe_tabelas_antigas.sql`
+   (só se existirem as tabelas antigas `clientes`/`pedidos`), `20261007020000_consulta_por_telefone.sql`
+   e `20261007030000_locais_de_entrega.sql`.
+   - A migração **não apaga nada**. Se já existir alguma tabela com o mesmo nome,
+     ela para no início, explica o motivo e não aplica nada.
+3. Crie a conta da dona: **Authentication → Users → Add user → Create new user**
+   (e-mail + senha forte, marque *Auto Confirm User*).
+4. Autorize essa conta como administradora (SQL Editor):
+
+   ```sql
+   insert into public.admins (user_id)
+   select id from auth.users where email = 'email-da-dona@exemplo.com';
+   ```
+
+5. Recomendado em **Authentication**:
+   - **Sign In / Providers → Email**: desative *Allow new users to sign up*
+     (ninguém precisa se cadastrar; só a dona tem conta).
+   - **URL Configuration**: em *Site URL* coloque o endereço do site e, em
+     *Redirect URLs*, adicione `https://SEU-SITE/admin/auth/callback`
+     (e `http://localhost:3000/admin/auth/callback` para testes). Isso faz o
+     “Esqueci minha senha” funcionar.
+   - **Policies → Password**: tamanho mínimo 10 e “leaked password protection”, se disponível.
+
+Se a migração mostrar o aviso sobre o Storage, crie pelo painel um bucket
+**público** chamado `site-images` (limite 5 MB, tipos `image/jpeg, image/png, image/webp`)
+e as políticas descritas em `docs/BANCO_DE_DADOS.md`.
+
+## 2. Variáveis de ambiente
+
+As chaves ficam **somente** em `.env.local` (ignorado pelo git). Modelo em `env.local.example`:
+
+| Variável | Para quê | Exemplo (fictício) |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto | `https://abcdefgh.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave **pública** anon/publishable | `eyJhbGciOi...` ou `sb_publishable_...` |
+| `NEXT_PUBLIC_SITE_URL` (opcional) | endereço público, usado no e-mail de redefinição de senha | `https://www.exemplo.com.br` |
+
+A chave `service_role`/secret **não é usada** e nunca deve ser colocada no projeto.
+
+## 3. Rodar no computador
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra <http://localhost:3000>. A área da dona fica em <http://localhost:3000/admin>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Para conferir tudo de uma vez no Windows, dê dois cliques em **`verificar.cmd`**:
+ele instala as dependências, roda `npm audit`, verificação de tipos, lint e build,
+e grava o resultado em `verificacao.log`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 4. Primeiros passos da dona (pelo painel)
 
-## Learn More
+1. **Configurações**: nome do negócio, WhatsApp, Instagram, se faz **retirada**
+   e/ou **entrega** (sem marcar uma das duas, o site não aceita pedidos), taxa de
+   entrega, antecedência mínima, foto da página inicial.
+2. **Produtos**: cadastrar com foto, preço (ou “a combinar”) e categoria.
+3. Os pedidos chegam em **Pedidos** e o painel avisa sozinho quando entra um novo.
 
-To learn more about Next.js, take a look at the following resources:
+## 5. Regras de negócio
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Limite por cliente** (pelo telefone): até **2 pedidos por dia** e **5 a cada
+  7 dias**. Pedidos **recusados/cancelados não contam**, então o cliente recupera o uso.
+- **Mais pedidos** (página inicial): soma das quantidades dos pedidos já
+  **confirmados** pela dona (confirmado, em preparação, pronto, concluído).
+  Pendentes e cancelados não contam. Aparece a partir de 3 pedidos confirmados.
+  Desempate: nº de pedidos e depois nome.
+- Preços e totais são **sempre calculados no banco**, com o preço oficial do produto.
+- O pedido guarda nome e preço do produto **no momento da compra**.
+- **Acompanhar pedido**: o cliente digita o **telefone** usado no pedido e vê os
+  pedidos dos últimos 60 dias (situação, itens, valores). Quando o pedido fica
+  **pronto**, a página mostra um aviso em destaque.
+- **Frete por local**: a dona cadastra locais e taxas em Configurações (começa com
+  "Ingleses" R$ 10 e "Fora dos Ingleses (região)" R$ 15). O cliente escolhe o local
+  ao pedir entrega; o banco calcula a taxa. Sem locais ativos, vale a taxa única.
+- **Modo noturno**: botão de lua/sol no topo do site e do painel. A escolha fica
+  salva no aparelho; sem escolha, segue o modo do celular/computador.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 6. Testes
 
-## Deploy on Vercel
+- Banco (RLS, limites, cálculo de valores, consulta segura): veja
+  `supabase/tests/rls_e_pedidos.test.sql` e `supabase/tests/consulta_por_telefone.test.sql`
+  (rodam num Postgres de teste, nunca em produção).
+- Aplicação: `npm run lint`, `npx tsc --noEmit`, `npm run build`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Documentação
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `docs/SEGURANCA.md`: o que foi feito em segurança e por quê.
+- `docs/BANCO_DE_DADOS.md`: tabelas, funções, políticas RLS e decisões.

@@ -29,12 +29,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-verificacao.log
 
 # env files (can opt-in for committing if needed)
-# Chaves e URLs ficam SOMENTE em .env.local (nunca vão para o git).
 .env*
-*.local
 
 # vercel
 .vercel
