@@ -188,6 +188,15 @@ body {
   .btn-danger:hover:not(:disabled) {
     background: #862e2e;
   }
+  /* Ação destrutiva secundária: visível como botão, sem competir com a principal. */
+  .btn-danger-outline {
+    background: transparent;
+    color: var(--color-erro);
+    border: 2px solid var(--color-erro);
+  }
+  .btn-danger-outline:hover:not(:disabled) {
+    background: var(--color-erro-fundo);
+  }
   .btn-sm {
     min-height: 2.5rem;
     padding: 0.45rem 1rem;

@@ -164,22 +164,37 @@ export async function setProductArchived(id: unknown, archived: unknown): Promis
 }
 
 /**
- * Exclui de vez apenas produtos que NUNCA foram pedidos. Os que já aparecem
- * em pedidos devem ser arquivados (o banco também impede a exclusão).
+ * Exclui de vez um produto que nunca foi pedido OU que só aparece em pedidos
+ * cancelados. Os pedidos guardam nome e preço do momento da compra, então o
+ * histórico continua igual. Produto em pedido válido deve ser arquivado
+ * (o banco também impede a exclusão nesse caso).
  */
 export async function deleteProduct(id: unknown): Promise<SimpleResult> {
   if (!isUuid(id)) return { ok: false, message: "Produto inválido." };
   const s = await session();
   if (!s) return { ok: false, message: SESSION_EXPIRED };
 
-  const { count } = await s.supabase.from("order_items").select("id", { count: "exact", head: true }).eq("product_id", id);
+  const { count, error: countError } = await s.supabase
+    .from("order_items")
+    .select("id, orders!inner(status)", { count: "exact", head: true })
+    .eq("product_id", id)
+    .neq("orders.status", "cancelled");
+  if (countError) return { ok: false, message: "Não foi possível verificar os pedidos. Tente novamente." };
   if ((count ?? 0) > 0) {
-    return { ok: false, message: "Este produto já aparece em pedidos. Arquive em vez de excluir, para manter o histórico." };
+    return {
+      ok: false,
+      message: "Este produto está em pedidos que não foram cancelados. Mantenha-o arquivado para preservar o histórico.",
+    };
   }
   const { data: product } = await s.supabase.from("products").select("image_path").eq("id", id).maybeSingle();
   const { error } = await s.supabase.from("products").delete().eq("id", id);
   if (error) {
-    return { ok: false, message: "Não foi possível excluir. Se o produto já foi pedido, arquive-o." };
+    return {
+      ok: false,
+      message: error.message.includes("PRODUCT_IN_ORDERS")
+        ? "Este produto está em pedidos que não foram cancelados. Mantenha-o arquivado."
+        : "Não foi possível excluir. Tente novamente.",
+    };
   }
   if (product?.image_path) await s.supabase.storage.from(IMAGES_BUCKET).remove([product.image_path]);
   refresh();

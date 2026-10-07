@@ -9,6 +9,9 @@ Migrações (em ordem, todas não destrutivas):
 4. `20261007030000_locais_de_entrega.sql`: locais de entrega com taxa própria
    (tabela `delivery_zones`, coluna `orders.delivery_zone_name`) e nova versão de
    `create_order` que calcula o frete pelo local escolhido.
+5. `20261007040000_excluir_produto_de_pedidos_cancelados.sql`: produto que só
+   aparece em pedidos cancelados pode ser excluído (o item do pedido mantém nome e
+   preço); produto em pedido válido continua protegido por gatilho.
 
 ## Tabelas
 
@@ -31,8 +34,9 @@ Ajustes em relação à sugestão inicial:
 
 ### Integridade
 - UUID em todos os IDs internos; dinheiro e quantidades em **inteiros**.
-- Chaves estrangeiras: item → pedido (`cascade`), item → produto (`restrict`:
-  produto já pedido não pode ser apagado, só arquivado), produto → categoria (`set null`).
+- Chaves estrangeiras: item → pedido (`cascade`), item → produto (`set null`; um
+  gatilho impede apagar produto que está em pedido não cancelado, que deve ser
+  arquivado), produto → categoria (`set null`).
 - CHECKs de tamanho/formato em todos os textos, telefone só com dígitos,
   entrega exige endereço e retirada não guarda endereço.
 

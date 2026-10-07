@@ -9,7 +9,7 @@ import {
   setProductArchived,
   type SimpleResult,
 } from "@/actions/admin-products";
-import { DownIcon, UpIcon } from "@/components/icons";
+import { DownIcon, TrashIcon, UpIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type Props = {
@@ -89,7 +89,8 @@ export function ProductRowActions({ id, name, active, archived, isFirst, isLast 
             >
               Restaurar
             </button>
-            <button type="button" className="btn btn-ghost btn-sm text-erro" disabled={isPending} onClick={() => setConfirm("delete")}>
+            <button type="button" className="btn btn-danger-outline btn-sm" disabled={isPending} onClick={() => setConfirm("delete")}>
+              <TrashIcon className="h-4 w-4" />
               Excluir de vez
             </button>
           </>
@@ -106,7 +107,10 @@ export function ProductRowActions({ id, name, active, archived, isFirst, isLast 
         title={confirm === "delete" ? `Excluir “${name}” de vez?` : `Arquivar “${name}”?`}
         description={
           confirm === "delete" ? (
-            <p>Só é possível excluir produtos que nunca foram pedidos. Esta ação não pode ser desfeita.</p>
+            <p>
+              Dá para excluir produtos que nunca foram pedidos ou que só aparecem em pedidos cancelados (esses pedidos
+              continuam mostrando o nome e o preço). Esta ação não pode ser desfeita.
+            </p>
           ) : (
             <p>
               O produto sai do cardápio e da lista principal, mas continua nos pedidos antigos. Você pode restaurá-lo
