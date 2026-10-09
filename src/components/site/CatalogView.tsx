@@ -102,18 +102,31 @@ export function CatalogView({ products, categories, canOrder }: Props) {
       </div>
 
       {canOrder && summary.count > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-linha bg-glace/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_24px_rgb(46_36_41/0.08)] backdrop-blur">
+        // Barra fixa na cor da marca: depois de adicionar algo, o próximo passo
+        // ("Revisar pedido") fica sempre visível e chama atenção.
+        <div data-cart-bar className="animate-toast fixed inset-x-0 bottom-0 z-30 bg-ameixa pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-8px_28px_rgb(46_36_41/0.25)]">
           <div className="container-page flex items-center justify-between gap-3 py-3">
-            <div className="min-w-0">
-              <p className="font-bold">
-                {summary.count} {summary.count === 1 ? "item" : "itens"} no pedido
-              </p>
-              <p className="truncate text-sm text-suave">
-                {summary.itemsTotal > 0 ? formatMoney(summary.itemsTotal) : null}
-                {summary.hasUnpriced ? (summary.itemsTotal > 0 ? " + itens a combinar" : "Valores a combinar") : null}
-              </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                key={summary.count}
+                className="animate-pop flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-white px-2 text-lg font-bold text-[#5b4a53]"
+                aria-hidden="true"
+              >
+                {summary.count}
+              </span>
+              <div className="min-w-0">
+                <p className="font-bold">{summary.count === 1 ? "item no pedido" : "itens no pedido"}</p>
+                <p className="truncate text-sm text-white/85">
+                  {summary.itemsTotal > 0 ? formatMoney(summary.itemsTotal) : null}
+                  {summary.hasUnpriced ? (summary.itemsTotal > 0 ? " + itens a combinar" : "Valores a combinar") : null}
+                </p>
+              </div>
             </div>
-            <Link href="/pedido/finalizar" className="btn btn-primary shrink-0">
+            <Link
+              href="/pedido/finalizar"
+              className="btn btn-light min-h-12 shrink-0 px-5 shadow-md sm:px-7"
+              aria-label={`Revisar pedido com ${summary.count} ${summary.count === 1 ? "item" : "itens"}`}
+            >
               <BagIcon className="h-5 w-5" />
               Revisar pedido
             </Link>

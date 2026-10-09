@@ -10,7 +10,7 @@ export default async function NovoProdutoPage() {
   const { supabase } = await requireAdmin();
   const { data: categories } = await supabase
     .from("categories")
-    .select("id, name, sort_order")
+    .select("id, name, sort_order, min_lead_days")
     .order("sort_order")
     .returns<Category[]>();
   return (

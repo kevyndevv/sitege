@@ -50,6 +50,30 @@ export const getSettings = cache(async (): Promise<Loaded<BusinessSettings>> => 
   return { data, error: null };
 });
 
+/**
+ * Categorias com a antecedência de cada uma. Se o banco ainda não recebeu a
+ * migração 20261008000000 (coluna min_lead_days inexistente, erro 42703), o
+ * cardápio continua funcionando sem a antecedência por categoria.
+ */
+async function loadCategories(supabase: ReturnType<typeof getPublicClient>) {
+  const withLead = await supabase
+    .from("categories")
+    .select("id, name, sort_order, min_lead_days")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
+    .returns<Category[]>();
+  if (withLead.error?.code !== "42703") return withLead;
+
+  console.warn("[catalog] rode a migração 20261008000000_antecedencia_por_categoria.sql no Supabase");
+  const basic = await supabase
+    .from("categories")
+    .select("id, name, sort_order")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
+    .returns<Omit<Category, "min_lead_days">[]>();
+  return { error: basic.error, data: (basic.data ?? []).map((c) => ({ ...c, min_lead_days: null })) };
+}
+
 export const getCatalog = cache(
   async (): Promise<Loaded<{ products: CatalogProduct[]; categories: Category[] }>> => {
     const empty = { products: [], categories: [] };
@@ -66,12 +90,7 @@ export const getCatalog = cache(
         .order("sort_order", { ascending: true })
         .order("name", { ascending: true })
         .returns<CatalogProduct[]>(),
-      supabase
-        .from("categories")
-        .select("id, name, sort_order")
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true })
-        .returns<Category[]>(),
+      loadCategories(supabase),
     ]);
     if (products.error || categories.error) {
       const e = products.error ?? categories.error;

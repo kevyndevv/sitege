@@ -28,6 +28,8 @@ export type Category = {
   id: string;
   name: string;
   sort_order: number;
+  /** Dias mínimos de antecedência para produtos desta categoria (null = não exige). */
+  min_lead_days: number | null;
 };
 
 /** Produto como o público enxerga (somente disponíveis). */

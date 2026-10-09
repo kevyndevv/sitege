@@ -84,6 +84,11 @@ body {
   line-height: 1.6;
 }
 
+/* Com a barra fixa do carrinho na tela, o fim da página não fica escondido atrás dela. */
+body:has([data-cart-bar]) {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
 /* Foco visível para quem navega pelo teclado. */
 :focus-visible {
   outline: 3px solid var(--color-ameixa);

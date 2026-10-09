@@ -1,3 +1,4 @@
+import os from "node:os";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -14,6 +15,27 @@ function supabaseOrigin(): URL | null {
 }
 
 const supabase = supabaseOrigin();
+
+/**
+ * Endereços deste computador na rede local (ex.: 192.168.0.160).
+ * Em desenvolvimento, o Next.js 16 bloqueia quem acessa por um endereço que não
+ * seja "localhost" — por isso o site não funcionava ao testar pelo celular.
+ * Liberamos só os IPs do próprio computador (e os de DEV_ALLOWED_ORIGINS, se
+ * quiser adicionar outros, separados por vírgula). Não vale em produção.
+ */
+function localNetworkHosts(): string[] {
+  const hosts = new Set<string>();
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const address of list ?? []) {
+      const family = String(address.family);
+      if (!address.internal && (family === "IPv4" || family === "4")) hosts.add(address.address);
+    }
+  }
+  for (const extra of (process.env.DEV_ALLOWED_ORIGINS ?? "").split(",")) {
+    if (extra.trim()) hosts.add(extra.trim());
+  }
+  return [...hosts];
+}
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -42,6 +64,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  ...(isDev ? { allowedDevOrigins: localNetworkHosts() } : {}),
   images: {
     remotePatterns: supabase
       ? [
@@ -56,10 +79,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      // A página de consulta recebe o segredo do pedido no endereço (#...):
-      // nunca enviar esse endereço como "referência" para outros sites.
-      { source: "/acompanhar", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
-      { source: "/admin/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      // Painel e consulta: nunca enviar o endereço como "referência" para outros
+      // sites. Usamos "same-origin" (e não "no-referrer") porque com
+      // "no-referrer" os navegadores mandam a origem como "null" nos envios de
+      // formulário, e o Next.js recusa o login por segurança.
+      { source: "/acompanhar", headers: [{ key: "Referrer-Policy", value: "same-origin" }] },
+      { source: "/admin/:path*", headers: [{ key: "Referrer-Policy", value: "same-origin" }] },
     ];
   },
 };

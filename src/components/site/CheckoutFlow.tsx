@@ -6,7 +6,8 @@ import { createOrder } from "@/actions/orders";
 import { clearCart, removeFromCart, setQuantity, useCart } from "@/lib/cart-store";
 import { resolveCart } from "@/lib/cart-summary";
 import { addDays, formatDateLong, formatMoney, formatTime } from "@/lib/format";
-import type { BusinessSettings, CatalogProduct, DeliveryZone, FulfillmentType } from "@/lib/types";
+import { daysLabel, joinNames, orderLeadTime } from "@/lib/lead-time";
+import type { BusinessSettings, CatalogProduct, Category, DeliveryZone, FulfillmentType } from "@/lib/types";
 import { randomUuid } from "@/lib/uuid";
 import {
   DEFINITIVE_ORDER_ERRORS,
@@ -24,8 +25,10 @@ import { QuantityStepper } from "./QuantityStepper";
 
 type Props = {
   products: CatalogProduct[];
+  /** Categorias (cada uma pode exigir uma antecedência própria). */
+  categories: Category[];
   settings: BusinessSettings;
-  /** Locais de entrega ativos (cada um com sua taxa). Vazio = taxa única. */
+  /** Locais de entrega ativos (cada um com sua taxa). Vazio = taxa "a combinar". */
   zones: DeliveryZone[];
   businessName: string;
   /** Data de hoje (fuso de Brasília), calculada no servidor. */
@@ -48,7 +51,7 @@ const FIELD_ORDER: CheckoutField[] = [
   "notes",
 ];
 
-export function CheckoutFlow({ products, settings, zones, businessName, today }: Props) {
+export function CheckoutFlow({ products, categories, settings, zones, businessName, today }: Props) {
   const lines = useCart();
   const cart = resolveCart(lines, products);
 
@@ -81,12 +84,20 @@ export function CheckoutFlow({ products, settings, zones, businessName, today }:
   const submitting = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const minDate = addDays(today, settings.min_lead_days ?? 0);
+  // Antecedência deste pedido: a maior entre a geral e a das categorias no carrinho.
+  const lead = orderLeadTime(
+    settings.min_lead_days,
+    cart.resolved.map((l) => l.product.id),
+    products,
+    categories,
+  );
+  const minDate = addDays(today, lead.days);
   const maxDate = addDays(today, LIMITS.maxDaysAhead);
   const rules = {
     offersPickup: settings.offers_pickup,
     offersDelivery: settings.offers_delivery,
-    minLeadDays: settings.min_lead_days,
+    minLeadDays: lead.days,
+    leadCategories: lead.categories,
     zoneIds: zones.map((z) => z.id),
   };
 
@@ -541,9 +552,10 @@ export function CheckoutFlow({ products, settings, zones, businessName, today }:
                 onChange={(e) => update("requestedDate", e.target.value)}
                 {...fieldProps("requestedDate")}
               />
-              {settings.min_lead_days ? (
+              {lead.days > 0 ? (
                 <span className="field-hint">
-                  Pedimos {settings.min_lead_days} {settings.min_lead_days === 1 ? "dia" : "dias"} de antecedência.
+                  Pedimos {daysLabel(lead.days)} de antecedência
+                  {lead.categories.length > 0 ? ` para ${joinNames(lead.categories)}` : ""}.
                 </span>
               ) : null}
               <FieldError field="requestedDate" errors={errors} />
@@ -613,9 +625,9 @@ export function CheckoutFlow({ products, settings, zones, businessName, today }:
           </p>
         ) : null}
         <button type="submit" className="btn btn-primary w-full min-h-14 text-lg">
-          Revisar pedido
+          Finalizar pedido
         </button>
-        <p className="text-center text-sm text-suave">Você ainda poderá conferir tudo antes de enviar.</p>
+        <p className="text-center text-sm text-suave">Na próxima tela você confere tudo antes de enviar.</p>
       </aside>
     </form>
     </>

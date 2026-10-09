@@ -243,9 +243,23 @@ function categoryName(value: unknown): string | null {
   return name.length >= 1 && name.length <= 60 ? name : null;
 }
 
-export async function createCategory(name: unknown): Promise<SimpleResult> {
+/**
+ * Antecedência da categoria: vazio = não exige; senão um inteiro de 0 a 60.
+ * Devolve undefined quando o valor é inválido.
+ */
+function categoryLeadDays(value: unknown): number | null | undefined {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "number" ? value : typeof value === "string" && /^\d{1,2}$/.test(value.trim()) ? Number(value) : NaN;
+  return Number.isInteger(n) && n >= 0 && n <= 60 ? n : undefined;
+}
+
+const LEAD_ERROR = "A antecedência deve ser um número de 0 a 60 (ou em branco).";
+
+export async function createCategory(name: unknown, leadDays?: unknown): Promise<SimpleResult> {
   const clean = categoryName(name);
   if (!clean) return { ok: false, message: "Informe um nome de até 60 caracteres." };
+  const lead = categoryLeadDays(leadDays);
+  if (lead === undefined) return { ok: false, message: LEAD_ERROR };
   const s = await session();
   if (!s) return { ok: false, message: SESSION_EXPIRED };
   const { data: last } = await s.supabase
@@ -254,7 +268,9 @@ export async function createCategory(name: unknown): Promise<SimpleResult> {
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { error } = await s.supabase.from("categories").insert({ name: clean, sort_order: (last?.sort_order ?? 0) + 1 });
+  const { error } = await s.supabase
+    .from("categories")
+    .insert({ name: clean, min_lead_days: lead, sort_order: (last?.sort_order ?? 0) + 1 });
   if (error) {
     return { ok: false, message: error.code === "23505" ? "Já existe uma categoria com esse nome." : "Não foi possível criar." };
   }
@@ -262,17 +278,20 @@ export async function createCategory(name: unknown): Promise<SimpleResult> {
   return { ok: true, message: "Categoria criada." };
 }
 
-export async function renameCategory(id: unknown, name: unknown): Promise<SimpleResult> {
+/** Altera o nome e a antecedência mínima (em dias) de uma categoria. */
+export async function updateCategory(id: unknown, name: unknown, leadDays: unknown): Promise<SimpleResult> {
   const clean = categoryName(name);
   if (!isUuid(id) || !clean) return { ok: false, message: "Informe um nome de até 60 caracteres." };
+  const lead = categoryLeadDays(leadDays);
+  if (lead === undefined) return { ok: false, message: LEAD_ERROR };
   const s = await session();
   if (!s) return { ok: false, message: SESSION_EXPIRED };
-  const { error } = await s.supabase.from("categories").update({ name: clean }).eq("id", id);
+  const { error } = await s.supabase.from("categories").update({ name: clean, min_lead_days: lead }).eq("id", id);
   if (error) {
-    return { ok: false, message: error.code === "23505" ? "Já existe uma categoria com esse nome." : "Não foi possível renomear." };
+    return { ok: false, message: error.code === "23505" ? "Já existe uma categoria com esse nome." : "Não foi possível salvar." };
   }
   refresh();
-  return { ok: true, message: "Categoria renomeada." };
+  return { ok: true, message: "Categoria salva." };
 }
 
 export async function deleteCategory(id: unknown): Promise<SimpleResult> {

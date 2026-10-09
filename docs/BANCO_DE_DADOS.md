@@ -12,13 +12,16 @@ Migrações (em ordem, todas não destrutivas):
 5. `20261007040000_excluir_produto_de_pedidos_cancelados.sql`: produto que só
    aparece em pedidos cancelados pode ser excluído (o item do pedido mantém nome e
    preço); produto em pedido válido continua protegido por gatilho.
+6. `20261008000000_antecedencia_por_categoria.sql`: coluna
+   `categories.min_lead_days` e nova versão de `create_order` (mesma assinatura)
+   que aplica a maior antecedência entre a geral e a das categorias do pedido.
 
 ## Tabelas
 
 | Tabela | Para quê | Observações |
 |---|---|---|
 | `admins` | quem é administradora | só `user_id` → `auth.users`. Sem senhas. |
-| `categories` | organizar o cardápio | opcional; nome único (sem diferenciar maiúsculas) |
+| `categories` | organizar o cardápio | opcional; nome único (sem diferenciar maiúsculas); `min_lead_days` (0–60, NULL = não exige) |
 | `products` | catálogo | `price_cents` inteiro (NULL = a combinar), `unit_label`, `image_path` (caminho no Storage), `active` (disponível), `archived` (fora do cardápio, preservado), `sort_order` |
 | `orders` | pedidos | `order_number` aleatório, `status`, `fulfillment_type`, endereço só para entrega, `requested_date` + `requested_time`, `delivery_fee_cents` (NULL = a combinar), `total_cents`, `tracking_token_hash` (SHA-256), `idempotency_key` |
 | `order_items` | itens do pedido | guarda **nome, unidade e preço do momento** da compra; `subtotal_cents` consistente por CHECK |
@@ -69,6 +72,11 @@ gatilhos) não podem ser chamadas pela API.
 - Contam pedidos em qualquer situação **exceto `cancelled`**. Se a dona recusar
   ou cancelar, o cliente recupera o uso.
 - Limite geral de 60 pedidos a cada 10 minutos (proteção contra robôs).
+
+### Antecedência (`create_order`)
+- Vale a **maior** entre `business_settings.min_lead_days` e o `min_lead_days`
+  das categorias dos produtos do pedido (produto sem categoria segue a geral).
+- Data antes disso, ou mais de 180 dias à frente → `INVALID_DATE`.
 
 ### Mais pedidos
 Conta só pedidos `confirmed`, `preparing`, `ready`, `completed`. Pendentes ficam

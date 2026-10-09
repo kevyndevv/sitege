@@ -1,7 +1,7 @@
 # Site de encomendas — doces e salgados
 
 Site onde clientes fazem encomendas **sem criar conta**, acompanham o pedido com
-um código secreto, e a dona gerencia tudo por um **painel protegido**.
+o telefone usado no pedido, e a dona gerencia tudo por um **painel protegido**.
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** + **Tailwind CSS 4**
 - **Supabase**: Postgres, Auth (login da dona) e Storage (fotos)
@@ -18,7 +18,8 @@ um código secreto, e a dona gerencia tudo por um **painel protegido**.
 2. Rode, **nesta ordem**, cada arquivo de `supabase/migrations/` (cole o conteúdo e clique em **Run**):
    `20261007000000_encomendas.sql`, `20261007010000_restringe_tabelas_antigas.sql`
    (só se existirem as tabelas antigas `clientes`/`pedidos`), `20261007020000_consulta_por_telefone.sql`
-   e `20261007030000_locais_de_entrega.sql`.
+   `20261007030000_locais_de_entrega.sql`, `20261007040000_excluir_produto_de_pedidos_cancelados.sql`
+   e `20261008000000_antecedencia_por_categoria.sql`.
    - A migração **não apaga nada**. Se já existir alguma tabela com o mesmo nome,
      ela para no início, explica o motivo e não aplica nada.
 3. Crie a conta da dona: **Authentication → Users → Add user → Create new user**
@@ -71,9 +72,10 @@ e grava o resultado em `verificacao.log`.
 ## 4. Primeiros passos da dona (pelo painel)
 
 1. **Configurações**: nome do negócio, WhatsApp, Instagram, se faz **retirada**
-   e/ou **entrega** (sem marcar uma das duas, o site não aceita pedidos), taxa de
-   entrega, antecedência mínima, foto da página inicial.
-2. **Produtos**: cadastrar com foto, preço (ou “a combinar”) e categoria.
+   e/ou **entrega** (sem marcar uma das duas, o site não aceita pedidos), locais de
+   entrega com a taxa de cada um, antecedência mínima geral, foto da página inicial.
+2. **Produtos**: cadastrar com foto, preço (ou “a combinar”) e categoria. Em
+   **Categorias**, dá para definir a antecedência de cada uma (ex.: Bolos = 3 dias).
 3. Os pedidos chegam em **Pedidos** e o painel avisa sozinho quando entra um novo.
 
 ## 5. Regras de negócio
@@ -89,16 +91,20 @@ e grava o resultado em `verificacao.log`.
 - **Acompanhar pedido**: o cliente digita o **telefone** usado no pedido e vê os
   pedidos dos últimos 60 dias (situação, itens, valores). Quando o pedido fica
   **pronto**, a página mostra um aviso em destaque.
+- **Antecedência**: existe a geral (Configurações) e a de cada categoria. Num
+  pedido com itens de categorias diferentes, vale a **maior**. Ex.: geral 1 dia,
+  Bolos 3 dias → pedido com bolo e docinho só pode ser para daqui a 3 dias. O
+  calendário da finalização já bloqueia os dias antes do prazo, e o banco confere tudo.
 - **Frete por local**: a dona cadastra locais e taxas em Configurações (começa com
   "Ingleses" R$ 10 e "Fora dos Ingleses (região)" R$ 15). O cliente escolhe o local
-  ao pedir entrega; o banco calcula a taxa. Sem locais ativos, vale a taxa única.
+  ao pedir entrega; o banco calcula a taxa. Sem locais ativos, a taxa fica "a combinar".
 - **Modo noturno**: botão de lua/sol no topo do site e do painel. A escolha fica
   salva no aparelho; sem escolha, segue o modo do celular/computador.
 
 ## 6. Testes
 
 - Banco (RLS, limites, cálculo de valores, consulta segura): veja
-  `supabase/tests/rls_e_pedidos.test.sql` e `supabase/tests/consulta_por_telefone.test.sql`
+  os arquivos em `supabase/tests/` (incluindo `antecedencia_categoria.test.sql`)
   (rodam num Postgres de teste, nunca em produção).
 - Aplicação: `npm run lint`, `npx tsc --noEmit`, `npm run build`.
 

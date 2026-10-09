@@ -5,18 +5,20 @@ import {
   createCategory,
   deleteCategory,
   moveCategory,
-  renameCategory,
+  updateCategory,
   type SimpleResult,
 } from "@/actions/admin-products";
+import { daysLabel } from "@/lib/lead-time";
 import type { Category } from "@/lib/types";
-import { DownIcon, UpIcon } from "@/components/icons";
+import { ClockIcon, DownIcon, UpIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export function CategoryManager({ categories }: { categories: Category[] }) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<SimpleResult | null>(null);
   const [newName, setNewName] = useState("");
-  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
+  const [newLead, setNewLead] = useState("");
+  const [editing, setEditing] = useState<{ id: string; name: string; lead: string } | null>(null);
   const [toDelete, setToDelete] = useState<Category | null>(null);
 
   function run(action: () => Promise<SimpleResult>, after?: () => void) {
@@ -31,7 +33,9 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
   return (
     <div className="space-y-4">
       <p className="text-suave">
-        Categorias organizam o cardápio (ex.: Doces, Salgados, Bolos). São opcionais.
+        Categorias organizam o cardápio (ex.: Doces, Salgados, Bolos). São opcionais. Cada uma pode ter sua própria{" "}
+        <strong className="text-tinta">antecedência mínima</strong>: se o pedido tiver itens de categorias diferentes, vale a
+        maior (incluindo a antecedência geral das Configurações).
       </p>
       {categories.length > 0 ? (
         <ul className="divide-y divide-linha rounded-2xl border border-linha">
@@ -39,33 +43,57 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             <li key={c.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
               {editing?.id === c.id ? (
                 <form
-                  className="flex flex-1 flex-wrap gap-2"
+                  className="flex flex-1 flex-wrap items-end gap-2 py-1"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    run(() => renameCategory(c.id, editing.name), () => setEditing(null));
+                    run(() => updateCategory(c.id, editing.name, editing.lead), () => setEditing(null));
                   }}
                 >
-                  <label htmlFor={`cat-${c.id}`} className="sr-only">
-                    Novo nome da categoria
-                  </label>
-                  <input
-                    id={`cat-${c.id}`}
-                    className="input min-h-10 flex-1 py-1.5"
-                    maxLength={60}
-                    value={editing.name}
-                    onChange={(e) => setEditing({ id: c.id, name: e.target.value })}
-                    autoFocus
-                  />
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={isPending}>
+                  <div className="min-w-40 flex-1">
+                    <label htmlFor={`cat-${c.id}`} className="text-sm font-bold">
+                      Nome
+                    </label>
+                    <input
+                      id={`cat-${c.id}`}
+                      className="input min-h-10 py-1.5"
+                      maxLength={60}
+                      value={editing.name}
+                      onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="w-36">
+                    <label htmlFor={`cat-lead-${c.id}`} className="text-sm font-bold">
+                      Antecedência (dias)
+                    </label>
+                    <input
+                      id={`cat-lead-${c.id}`}
+                      className="input min-h-10 py-1.5"
+                      inputMode="numeric"
+                      maxLength={2}
+                      placeholder="Não exige"
+                      value={editing.lead}
+                      onChange={(e) => setEditing({ ...editing, lead: e.target.value.replace(/\D/g, "") })}
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-primary btn-sm min-h-10" disabled={isPending}>
                     Salvar
                   </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(null)}>
+                  <button type="button" className="btn btn-ghost btn-sm min-h-10" onClick={() => setEditing(null)}>
                     Cancelar
                   </button>
                 </form>
               ) : (
                 <>
-                  <span className="flex-1 font-bold">{c.name}</span>
+                  <span className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="font-bold">{c.name}</span>
+                    {c.min_lead_days !== null ? (
+                      <span className="inline-flex items-center gap-1 text-sm text-suave">
+                        <ClockIcon className="h-4 w-4" />
+                        {c.min_lead_days === 0 ? "Pode pedir para hoje" : `${daysLabel(c.min_lead_days)} de antecedência`}
+                      </span>
+                    ) : null}
+                  </span>
                   <button
                     type="button"
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-veu disabled:opacity-30"
@@ -84,8 +112,14 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                   >
                     <DownIcon />
                   </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing({ id: c.id, name: c.name })}>
-                    Renomear
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() =>
+                      setEditing({ id: c.id, name: c.name, lead: c.min_lead_days === null ? "" : String(c.min_lead_days) })
+                    }
+                  >
+                    Editar
                   </button>
                   <button type="button" className="btn btn-ghost btn-sm text-erro" onClick={() => setToDelete(c)}>
                     Excluir
@@ -101,7 +135,10 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
         className="flex flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          run(() => createCategory(newName), () => setNewName(""));
+          run(() => createCategory(newName, newLead), () => {
+            setNewName("");
+            setNewLead("");
+          });
         }}
       >
         <label htmlFor="nova-categoria" className="sr-only">
@@ -114,6 +151,18 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
           maxLength={60}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+        />
+        <label htmlFor="nova-categoria-prazo" className="sr-only">
+          Antecedência mínima da nova categoria, em dias (opcional)
+        </label>
+        <input
+          id="nova-categoria-prazo"
+          className="input min-h-11 w-40"
+          inputMode="numeric"
+          maxLength={2}
+          placeholder="Dias (opcional)"
+          value={newLead}
+          onChange={(e) => setNewLead(e.target.value.replace(/\D/g, ""))}
         />
         <button type="submit" className="btn btn-outline btn-sm min-h-11" disabled={isPending || !newName.trim()}>
           Adicionar

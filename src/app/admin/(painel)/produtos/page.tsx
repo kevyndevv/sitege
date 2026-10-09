@@ -26,7 +26,7 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Pro
       .order("sort_order")
       .order("name")
       .returns<AdminProduct[]>(),
-    supabase.from("categories").select("id, name, sort_order").order("sort_order").order("name").returns<Category[]>(),
+    supabase.from("categories").select("id, name, sort_order, min_lead_days").order("sort_order").order("name").returns<Category[]>(),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("archived", true),
   ]);
 

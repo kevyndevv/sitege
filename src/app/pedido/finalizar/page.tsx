@@ -43,6 +43,7 @@ export default async function FinalizarPage() {
         ) : (
           <CheckoutFlow
             products={catalog.data.products}
+            categories={catalog.data.categories}
             settings={settings}
             zones={zones.data}
             businessName={siteName(settings)}

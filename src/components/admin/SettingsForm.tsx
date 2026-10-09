@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { saveSettings, type SettingsField } from "@/actions/admin-settings";
-import { centsToInput, formatPhone } from "@/lib/format";
+import { formatPhone } from "@/lib/format";
 import type { BusinessSettings } from "@/lib/types";
 import { Spinner } from "@/components/ui/Spinner";
 import { ImagePicker } from "./ImagePicker";
@@ -112,17 +112,11 @@ export function SettingsForm({ settings, logoUrl, heroUrl }: Props) {
             multiline: true,
             placeholder: "Bairros atendidos, dias de entrega…",
           })}
-          {field("delivery_fee", "Taxa única de entrega (R$)", {
-            value: centsToInput(settings.delivery_fee_cents),
-            inputMode: "decimal",
-            placeholder: "Ex.: 8,00",
-            hint: "Só é usada quando não há locais de entrega ativos (veja acima). Em branco = “a combinar”; 0 = grátis.",
-          })}
           {field("min_lead_days", "Antecedência mínima (dias)", {
             value: settings.min_lead_days === null ? "" : String(settings.min_lead_days),
             inputMode: "numeric",
             placeholder: "Ex.: 2",
-            hint: "Quantos dias antes o cliente precisa pedir. Em branco = pode pedir para hoje.",
+            hint: "Quantos dias antes o cliente precisa pedir. Em branco = pode pedir para hoje. Cada categoria pode exigir mais dias (em Produtos → Categorias); vale sempre a maior.",
           })}
         </div>
         {field("order_notice", "Aviso na finalização do pedido", {

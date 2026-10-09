@@ -1,6 +1,7 @@
 "use server";
 
-import { getDeliveryZones, getSettings } from "@/lib/data/public";
+import { getCatalog, getDeliveryZones, getSettings } from "@/lib/data/public";
+import { orderLeadTime } from "@/lib/lead-time";
 import { onlyDigits } from "@/lib/format";
 import { clientIp, hitRateLimit } from "@/lib/rate-limit";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -57,14 +58,22 @@ export async function createOrder(raw: unknown): Promise<CreateOrderResult> {
     return { ok: false, code: "ORDERS_CLOSED", message: s.closed_message || orderErrorMessage("ORDERS_CLOSED") };
   }
 
-  const zones = await getDeliveryZones();
-  if (zones.error) {
+  const [zones, catalog] = await Promise.all([getDeliveryZones(), getCatalog()]);
+  if (zones.error || catalog.error) {
     return { ok: false, code: "UNAVAILABLE", message: orderErrorMessage(undefined) };
   }
+  // Antecedência deste pedido: a maior entre a geral e a das categorias dos itens.
+  const lead = orderLeadTime(
+    s.min_lead_days,
+    input.items.map((item) => item.productId),
+    catalog.data.products,
+    catalog.data.categories,
+  );
   const fieldErrors = validateCheckout(input, {
     offersPickup: s.offers_pickup,
     offersDelivery: s.offers_delivery,
-    minLeadDays: s.min_lead_days,
+    minLeadDays: lead.days,
+    leadCategories: lead.categories,
     zoneIds: zones.data.map((z) => z.id),
   });
   if (Object.keys(fieldErrors).length > 0) {

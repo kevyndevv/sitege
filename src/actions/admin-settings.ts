@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth";
-import { onlyDigits, parseMoneyToCents } from "@/lib/format";
+import { onlyDigits } from "@/lib/format";
 import { readImageUpload } from "@/lib/image-upload";
 import { revalidatePublicPages } from "@/lib/revalidate";
 import { IMAGES_BUCKET } from "@/lib/supabase/config";
@@ -21,7 +21,6 @@ export type SettingsField =
   | "closed_message"
   | "pickup_info"
   | "delivery_info"
-  | "delivery_fee"
   | "min_lead_days"
   | "order_notice"
   | "offers"
@@ -101,14 +100,10 @@ export async function saveSettings(_prev: SettingsResult, formData: FormData): P
   values.offers_pickup = formData.get("offers_pickup") === "on";
   values.offers_delivery = formData.get("offers_delivery") === "on";
 
-  const feeRaw = String(formData.get("delivery_fee") ?? "").trim();
-  if (feeRaw) {
-    const fee = parseMoneyToCents(feeRaw);
-    if (fee === null || fee > 1_000_000) errors.delivery_fee = "Valor inválido. Exemplo: 8,00 (ou 0 para grátis)";
-    values.delivery_fee_cents = fee;
-  } else {
-    values.delivery_fee_cents = null;
-  }
+  // A taxa de entrega agora vem só dos "Locais de entrega". A antiga taxa única
+  // foi retirada do painel; zeramos o valor para não ficar uma taxa escondida
+  // valendo quando não houver locais ativos (nesse caso fica "a combinar").
+  values.delivery_fee_cents = null;
 
   const leadRaw = String(formData.get("min_lead_days") ?? "").trim();
   if (leadRaw) {

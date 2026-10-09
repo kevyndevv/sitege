@@ -30,7 +30,7 @@ export function ZoneManager({ zones }: { zones: AdminDeliveryZone[] }) {
     <div className="space-y-4">
       <p className="text-suave">
         Cada local tem sua taxa. O cliente escolhe o local ao pedir entrega e a taxa entra no total automaticamente.
-        Sem nenhum local ativo, vale a taxa única abaixo.
+        Sem nenhum local ativo, a taxa de entrega fica “a combinar”.
       </p>
 
       {zones.length > 0 ? (
@@ -112,7 +112,7 @@ export function ZoneManager({ zones }: { zones: AdminDeliveryZone[] }) {
           )}
         </ul>
       ) : (
-        <p className="rounded-2xl bg-veu px-4 py-3">Nenhum local cadastrado: a entrega usa a taxa única.</p>
+        <p className="rounded-2xl bg-veu px-4 py-3">Nenhum local cadastrado: a taxa de entrega fica “a combinar”.</p>
       )}
 
       <form

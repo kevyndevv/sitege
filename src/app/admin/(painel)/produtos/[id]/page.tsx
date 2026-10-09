@@ -19,7 +19,7 @@ export default async function EditarProdutoPage({ params }: { params: Promise<{ 
       .select("id, name, description, price_cents, unit_label, image_path, category_id, active, archived, sort_order, created_at, updated_at")
       .eq("id", id)
       .maybeSingle<AdminProduct>(),
-    supabase.from("categories").select("id, name, sort_order").order("sort_order").returns<Category[]>(),
+    supabase.from("categories").select("id, name, sort_order, min_lead_days").order("sort_order").returns<Category[]>(),
   ]);
   if (!productRes.data) notFound();
   const product = productRes.data;

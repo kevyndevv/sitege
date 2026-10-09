@@ -3,6 +3,7 @@
  * (validação definitiva). O banco ainda valida tudo de novo em create_order.
  */
 import { addDays, onlyDigits, todayInSaoPaulo } from "./format";
+import { daysLabel, joinNames } from "./lead-time";
 import type { FulfillmentType } from "./types";
 
 export const LIMITS = {
@@ -48,8 +49,11 @@ export type FieldErrors = Partial<Record<CheckoutField, string>>;
 export type CheckoutRules = {
   offersPickup: boolean;
   offersDelivery: boolean;
+  /** Antecedência que vale para ESTE pedido (a maior entre a geral e a das categorias). */
   minLeadDays: number | null;
-  /** IDs dos locais de entrega ativos (vazio = taxa única). */
+  /** Categorias responsáveis pela antecedência, quando ela é maior que a geral. */
+  leadCategories?: string[];
+  /** IDs dos locais de entrega ativos (vazio = taxa "a combinar"). */
   zoneIds: string[];
 };
 
@@ -109,9 +113,10 @@ export function validateCheckout(input: CheckoutInput, rules: CheckoutRules, now
   } else {
     const min = earliestDate(rules.minLeadDays, now);
     if (input.requestedDate < min) {
+      const reason = rules.leadCategories?.length ? ` para ${joinNames(rules.leadCategories)}` : "";
       errors.requestedDate =
         rules.minLeadDays && rules.minLeadDays > 0
-          ? `Pedimos pelo menos ${rules.minLeadDays} ${rules.minLeadDays === 1 ? "dia" : "dias"} de antecedência.`
+          ? `Pedimos pelo menos ${daysLabel(rules.minLeadDays)} de antecedência${reason}.`
           : "Escolha uma data a partir de hoje.";
     } else if (input.requestedDate > latestDate(now)) {
       errors.requestedDate = "Escolha uma data nos próximos 6 meses.";
