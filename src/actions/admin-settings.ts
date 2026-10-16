@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { assertAdmin } from "@/lib/auth";
 import { onlyDigits } from "@/lib/format";
+import { isHeroFrame } from "@/lib/hero-frames";
 import { readImageUpload } from "@/lib/image-upload";
 import { revalidatePublicPages } from "@/lib/revalidate";
 import { IMAGES_BUCKET } from "@/lib/supabase/config";
@@ -25,7 +26,8 @@ export type SettingsField =
   | "order_notice"
   | "offers"
   | "logo"
-  | "hero_image";
+  | "hero_image"
+  | "hero_frame";
 
 export type SettingsResult = {
   ok: boolean;
@@ -114,6 +116,12 @@ export async function saveSettings(_prev: SettingsResult, formData: FormData): P
     values.min_lead_days = null;
   }
 
+  const frame = formData.get("hero_frame");
+  if (frame !== null) {
+    if (isHeroFrame(frame)) values.hero_frame = frame;
+    else errors.hero_frame = "Escolha uma das molduras.";
+  }
+
   const logo = await readImageUpload(formData.get("logo"));
   if (logo.error) errors.logo = logo.error;
   const hero = await readImageUpload(formData.get("hero_image"));
@@ -156,7 +164,16 @@ export async function saveSettings(_prev: SettingsResult, formData: FormData): P
     }
   }
 
-  const { error } = await session.supabase.from("business_settings").update(values).eq("id", true);
+  let { error } = await session.supabase.from("business_settings").update(values).eq("id", true);
+  // Banco sem a migração da moldura (coluna inexistente ou sem permissão):
+  // salva o resto e avisa.
+  let frameMissing = false;
+  if (error && "hero_frame" in values && (error.code === "42703" || error.code === "42501" || error.code === "PGRST204")) {
+    const rest = { ...values };
+    delete rest.hero_frame;
+    frameMissing = true;
+    ({ error } = await session.supabase.from("business_settings").update(rest).eq("id", true));
+  }
   if (error) {
     console.error("[saveSettings] falha:", error.code);
     if (uploaded.length) await session.supabase.storage.from(IMAGES_BUCKET).remove(uploaded);
@@ -166,5 +183,12 @@ export async function saveSettings(_prev: SettingsResult, formData: FormData): P
 
   revalidatePath("/admin", "layout");
   revalidatePublicPages();
+  if (frameMissing) {
+    return {
+      ok: true,
+      message:
+        "Configurações salvas, mas a moldura ainda não pôde ser trocada: falta rodar a atualização do banco (moldura_da_foto).",
+    };
+  }
   return { ok: true, message: "Configurações salvas! O site já foi atualizado." };
 }

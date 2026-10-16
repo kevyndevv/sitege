@@ -22,6 +22,8 @@ export type BusinessSettings = {
   delivery_fee_cents: number | null;
   min_lead_days: number | null;
   order_notice: string | null;
+  /** Moldura da foto da página inicial (veja lib/hero-frames.ts). */
+  hero_frame: string | null;
 };
 
 export type Category = {

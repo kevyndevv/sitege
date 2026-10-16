@@ -14,7 +14,7 @@ export function SiteHeader({ settings }: { settings: BusinessSettings }) {
   const logo = publicImageUrl(settings.logo_path);
   const name = siteName(settings);
   return (
-    <header className="sticky top-0 z-30 border-b border-linha/70 bg-acucar/95 backdrop-blur supports-[backdrop-filter]:bg-acucar/80">
+    <header className="border-b border-linha/70 bg-acucar/95 backdrop-blur supports-[backdrop-filter]:bg-acucar/80">
       <div className="container-page flex h-16 items-center justify-between gap-3">
         <Link href="/" className="flex min-w-0 items-center gap-3" aria-label={`${name}, página inicial`}>
           {logo ? (

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getPublicClient } from "@/lib/supabase/public";
+import { selectBusinessSettings } from "./settings-query";
 import type { BusinessSettings, CatalogProduct, Category, DeliveryZone } from "@/lib/types";
 
 export type Loaded<T> = { data: T; error: null } | { data: T; error: "not_configured" | "unavailable" };
@@ -27,10 +28,8 @@ export const EMPTY_SETTINGS: BusinessSettings = {
   delivery_fee_cents: null,
   min_lead_days: null,
   order_notice: null,
+  hero_frame: null,
 };
-
-const SETTINGS_COLUMNS =
-  "business_name, hero_title, hero_text, about_text, logo_path, hero_image_path, instagram_handle, whatsapp_number, contact_email, city, opening_hours, accepting_orders, closed_message, offers_pickup, offers_delivery, pickup_info, delivery_info, delivery_fee_cents, min_lead_days, order_notice";
 
 const PRODUCT_COLUMNS = "id, name, description, price_cents, unit_label, image_path, category_id";
 
@@ -39,10 +38,7 @@ export const POPULAR_LIMIT = 6;
 
 export const getSettings = cache(async (): Promise<Loaded<BusinessSettings>> => {
   if (!isSupabaseConfigured()) return { data: EMPTY_SETTINGS, error: "not_configured" };
-  const { data, error } = await getPublicClient()
-    .from("business_settings")
-    .select(SETTINGS_COLUMNS)
-    .maybeSingle<BusinessSettings>();
+  const { data, error } = await selectBusinessSettings(getPublicClient());
   if (error || !data) {
     console.error("[settings] falha ao carregar configurações:", error ? error.code || error.message : "sem linha");
     return { data: EMPTY_SETTINGS, error: "unavailable" };

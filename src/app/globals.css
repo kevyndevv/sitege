@@ -32,6 +32,8 @@
   --color-info-fundo: #e8f0f8;
   --color-forno: #8a4b2a;
   --color-forno-fundo: #f8ece4;
+  /* Aviso de encomendas pausadas: vermelho forte, com texto branco (contraste 6:1). */
+  --color-pausa: #b42a22;
 
   --font-display: var(--font-young-serif), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -41,6 +43,8 @@
 
 :root {
   color-scheme: light;
+  /* Altura do topo fixo (menu + aviso de pausa). Atualizada pelo StickyTop. */
+  --topo: 4rem;
 }
 
 /*
@@ -69,11 +73,13 @@
   --color-info-fundo: #1c2a3b;
   --color-forno: #eeb08a;
   --color-forno-fundo: #3a271c;
+  --color-pausa: #a3271f;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  scroll-padding-top: var(--topo);
 }
 
 body {
@@ -276,6 +282,206 @@ body:has([data-cart-bar]) {
     background: linear-gradient(90deg, var(--color-veu), var(--color-glace), var(--color-veu));
     background-size: 200% 100%;
     animation: skeleton 1.4s ease-in-out infinite;
+  }
+
+  /* Listras discretas na faixa de "encomendas pausadas", para chamar atenção. */
+  .faixa-pausa {
+    background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.08) 0 14px, transparent 14px 28px);
+  }
+
+  /*
+   * Molduras da foto da página inicial (escolhidas no painel). Tudo em "em":
+   * a mesma moldura serve na página (fonte 16px) e na miniatura do painel.
+   */
+  .moldura {
+    position: relative;
+  }
+  .moldura-foto {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-ameixa-funda);
+  }
+  .moldura-sombra-interna {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* 1. Quadro de madeira rústica, com a madeira puxada para o tom ameixa:
+   *    quatro ripas em meia-esquadria, veios, nós e perfil claro/escuro. */
+  .moldura-madeira {
+    --t: 1.35em;
+    padding: var(--t);
+    border-radius: 0.2em;
+    background: #4a3330;
+    box-shadow:
+      0 0 0 0.06em rgb(35 20 20 / 0.7),
+      0 1.6em 3.2em rgb(30 18 22 / 0.45),
+      0 0.4em 0.9em rgb(30 18 22 / 0.3);
+  }
+  .moldura-madeira .ripa {
+    position: absolute;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--a), rgb(255 230 215 / 0.2) 0, transparent 26%, rgb(0 0 0 / 0.1) 60%, rgb(0 0 0 / 0.5) 100%),
+      radial-gradient(var(--no), rgb(40 22 20 / 0.65), rgb(40 22 20 / 0.28) 45%, transparent 72%),
+      repeating-linear-gradient(var(--a), rgb(40 22 20 / 0.42) 0 0.07em, transparent 0.07em 0.2em, rgb(255 225 205 / 0.09) 0.2em 0.27em, transparent 0.27em 0.48em, rgb(40 22 20 / 0.25) 0.48em 0.6em, transparent 0.6em 0.85em),
+      repeating-linear-gradient(calc(var(--a) + 1.5deg), rgb(40 22 20 / 0.24) 0 0.1em, transparent 0.1em 0.65em),
+      repeating-linear-gradient(calc(var(--a) - 1deg), rgb(255 225 205 / 0.07) 0 0.08em, transparent 0.08em 0.9em),
+      linear-gradient(calc(var(--a) + 90deg), #5f433b, #7a5a50 16%, #654840 33%, #84645a 50%, #5c4038 68%, #765549 85%, #5f433b);
+  }
+  .moldura-madeira .ripa-topo {
+    --a: 180deg;
+    --no: ellipse 1.7em 0.45em at 27% 55%;
+    inset: 0 0 auto 0;
+    height: var(--t);
+    clip-path: polygon(0 0, 100% 0, calc(100% - var(--t)) 100%, var(--t) 100%);
+    filter: brightness(1.06);
+  }
+  .moldura-madeira .ripa-base {
+    --a: 0deg;
+    --no: ellipse 1.9em 0.5em at 70% 45%;
+    inset: auto 0 0 0;
+    height: var(--t);
+    clip-path: polygon(var(--t) 0, calc(100% - var(--t)) 0, 100% 100%, 0 100%);
+    filter: brightness(0.8);
+  }
+  .moldura-madeira .ripa-esq {
+    --a: 90deg;
+    --no: ellipse 0.45em 1.7em at 50% 64%;
+    inset: 0 auto 0 0;
+    width: var(--t);
+    clip-path: polygon(0 0, 100% var(--t), 100% calc(100% - var(--t)), 0 100%);
+  }
+  .moldura-madeira .ripa-dir {
+    --a: 270deg;
+    --no: ellipse 0.5em 1.8em at 45% 28%;
+    inset: 0 0 0 auto;
+    width: var(--t);
+    clip-path: polygon(0 var(--t), 100% 0, 100% 100%, 0 calc(100% - var(--t)));
+    filter: brightness(0.88);
+  }
+  .moldura-madeira .moldura-sombra-interna {
+    box-shadow:
+      inset 0 0 0 0.12em rgb(30 16 14 / 0.6),
+      inset 0 0.5em 1em rgb(0 0 0 / 0.45),
+      inset 0 -0.12em 0.4em rgb(0 0 0 / 0.2);
+  }
+
+  /* 2. Arco: janela arredondada em cima, com filete claro e sombra ameixa. */
+  .moldura-arco {
+    --r: 999px 999px 1.75em 1.75em;
+  }
+  .moldura-arco::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translate(0.85em, 0.85em);
+    border-radius: var(--r);
+    background: var(--color-ameixa-funda);
+  }
+  .moldura-arco .moldura-foto {
+    border-radius: var(--r);
+    box-shadow: 0 1.5em 3em rgb(30 18 22 / 0.35);
+  }
+  .moldura-arco .moldura-sombra-interna {
+    border-radius: var(--r);
+    box-shadow:
+      inset 0 0 0 0.4em rgb(251 248 249 / 0.92),
+      inset 0 0 0 0.55em rgb(46 36 41 / 0.15),
+      inset 0 0.8em 1.6em rgb(0 0 0 / 0.25);
+  }
+
+  /* 3. Polaroid: papel branco, base mais larga com coraçãozinho e fitinha. */
+  .moldura-polaroid {
+    padding: 0.9em 0.9em 3.6em;
+    border-radius: 0.25em;
+    background: #fdfaf6;
+    box-shadow:
+      0 1.4em 2.8em rgb(30 18 22 / 0.4),
+      0 0.25em 0.6em rgb(30 18 22 / 0.25);
+  }
+  .moldura-polaroid .moldura-foto {
+    background: #2e2429;
+  }
+  .moldura-polaroid .moldura-sombra-interna {
+    box-shadow:
+      inset 0 0 0 0.06em rgb(0 0 0 / 0.25),
+      inset 0 0.2em 0.5em rgb(0 0 0 / 0.25);
+  }
+  .moldura-polaroid .fita {
+    position: absolute;
+    left: 50%;
+    top: -0.9em;
+    z-index: 2;
+    width: 6.5em;
+    height: 1.9em;
+    transform: translateX(-50%) rotate(-3deg);
+    background:
+      repeating-linear-gradient(45deg, rgb(255 255 255 / 0.28) 0 0.35em, transparent 0.35em 0.7em),
+      rgb(168 148 158 / 0.85);
+    clip-path: polygon(0 10%, 4% 0, 96% 0, 100% 14%, 97% 50%, 100% 88%, 96% 100%, 4% 100%, 0 90%, 3% 50%);
+  }
+  .moldura-polaroid .legenda {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 3.6em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a8949e;
+  }
+
+  /* 4. Toalhinha de renda: foto redonda sobre uma renda de bolo (SVG). */
+  .moldura-renda {
+    aspect-ratio: 1;
+    filter: drop-shadow(0 1em 1.4em rgb(30 18 22 / 0.4));
+  }
+  .moldura-renda .renda {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: #fbf6f3;
+  }
+  .moldura-renda .moldura-foto {
+    position: absolute;
+    inset: 16%;
+    border-radius: 50%;
+  }
+  .moldura-renda .moldura-sombra-interna {
+    border-radius: 50%;
+    box-shadow: inset 0 0.35em 0.9em rgb(0 0 0 / 0.35);
+  }
+
+  /* 5. Oval dourada: moldura clássica com brilho metálico e filete de contas. */
+  .moldura-dourada {
+    padding: 1.25em;
+    border-radius: 50%;
+    background: conic-gradient(from 30deg, #a57a26, #f1d98a, #b58a32, #fff0b8, #9c711f, #e8c66b, #a57a26, #f6e2a0, #a57a26);
+    box-shadow:
+      0 0 0 0.08em #5e430f,
+      inset 0 0 0 0.08em rgb(255 245 210 / 0.6),
+      0 1.5em 3em rgb(30 18 22 / 0.45);
+  }
+  .moldura-dourada::before {
+    content: "";
+    position: absolute;
+    inset: 0.5em;
+    border-radius: 50%;
+    border: 0.2em dotted rgb(110 78 20 / 0.75);
+    pointer-events: none;
+  }
+  .moldura-dourada .moldura-foto {
+    border-radius: 50%;
+  }
+  .moldura-dourada .moldura-sombra-interna {
+    border-radius: 50%;
+    box-shadow:
+      inset 0 0 0 0.2em #6b4c12,
+      inset 0 0 0 0.32em rgb(246 226 160 / 0.7),
+      inset 0 0.6em 1.4em rgb(0 0 0 / 0.45);
   }
 }
 

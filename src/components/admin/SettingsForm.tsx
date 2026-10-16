@@ -5,6 +5,7 @@ import { saveSettings, type SettingsField } from "@/actions/admin-settings";
 import { formatPhone } from "@/lib/format";
 import type { BusinessSettings } from "@/lib/types";
 import { Spinner } from "@/components/ui/Spinner";
+import { FramePicker } from "./FramePicker";
 import { ImagePicker } from "./ImagePicker";
 
 type Props = {
@@ -162,6 +163,11 @@ export function SettingsForm({ settings, logoUrl, heroUrl }: Props) {
             onChange={(file, removed) => setHero({ file, removed })}
           />
         </div>
+        <FramePicker
+          defaultValue={settings.hero_frame}
+          photoUrl={hero.removed ? null : heroUrl}
+          error={errors.hero_frame}
+        />
       </Section>
 
       <Section title="Contato e redes sociais">

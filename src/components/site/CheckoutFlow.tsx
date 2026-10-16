@@ -22,6 +22,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { OrderSuccess } from "./OrderSuccess";
 import { PriceTag } from "./PriceTag";
 import { QuantityStepper } from "./QuantityStepper";
+import { TimePicker } from "./TimePicker";
 
 type Props = {
   products: CatalogProduct[];
@@ -537,15 +538,15 @@ export function CheckoutFlow({ products, categories, settings, zones, businessNa
             </div>
           ) : null}
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-5">
+            <div className="min-w-0">
               <label htmlFor="requestedDate" className="field-label">
                 Para qual dia?
               </label>
               <input
                 id="requestedDate"
                 type="date"
-                className="input"
+                className="input px-3 sm:px-[0.9rem]"
                 min={minDate}
                 max={maxDate}
                 value={form.requestedDate}
@@ -560,17 +561,11 @@ export function CheckoutFlow({ products, categories, settings, zones, businessNa
               ) : null}
               <FieldError field="requestedDate" errors={errors} />
             </div>
-            <div>
-              <label htmlFor="requestedTime" className="field-label">
-                Horário <span className="font-normal text-suave">(opcional)</span>
-              </label>
-              <input
-                id="requestedTime"
-                type="time"
-                className="input"
+            <div className="min-w-0">
+              <TimePicker
                 value={form.requestedTime}
-                onChange={(e) => update("requestedTime", e.target.value)}
-                {...fieldProps("requestedTime")}
+                onChange={(t) => update("requestedTime", t)}
+                buttonProps={fieldProps("requestedTime")}
               />
               {settings.opening_hours ? (
                 <span className="field-hint">Atendimento: {settings.opening_hours}</span>
@@ -601,7 +596,7 @@ export function CheckoutFlow({ products, categories, settings, zones, businessNa
       </div>
 
       {/* Resumo lateral */}
-      <aside className="card space-y-4 p-5 sm:p-7 lg:sticky lg:top-24" aria-label="Resumo do pedido">
+      <aside className="card space-y-4 p-5 sm:p-7 lg:sticky lg:top-[calc(var(--topo)+2rem)]" aria-label="Resumo do pedido">
         <h2 className="font-display text-2xl">Resumo</h2>
         <ul className="space-y-1.5">
           {cart.resolved.map((l) => (

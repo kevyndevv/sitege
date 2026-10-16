@@ -59,7 +59,12 @@ export type CheckoutRules = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Horário: de 30 em 30 minutos (07h00 a 21h00), escolhido numa lista.
+const TIME_RE = /^([01]\d|2[0-3]):(00|30)$/;
+export const TIME_OPTIONS: readonly string[] = Array.from({ length: 29 }, (_, i) => {
+  const minutes = 7 * 60 + i * 30;
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${minutes % 60 === 0 ? "00" : "30"}`;
+});
 
 export function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_RE.test(value);
@@ -124,7 +129,7 @@ export function validateCheckout(input: CheckoutInput, rules: CheckoutRules, now
   }
 
   if (input.requestedTime && !TIME_RE.test(input.requestedTime)) {
-    errors.requestedTime = "Horário inválido.";
+    errors.requestedTime = "Escolha um horário da lista (de 30 em 30 minutos).";
   }
 
   if (input.notes.trim().length > LIMITS.notesMax) {

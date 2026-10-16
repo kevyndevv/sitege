@@ -58,7 +58,7 @@ export function CatalogView({ products, categories, canOrder }: Props) {
     <>
       {showFilters ? (
         <div
-          className="sticky top-16 z-20 -mx-4 mb-6 overflow-x-auto border-b border-linha/70 bg-acucar/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-full sm:border sm:px-3"
+          className="sticky top-[var(--topo)] z-20 -mx-4 mb-6 overflow-x-auto border-b border-linha/70 bg-acucar/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-full sm:border sm:px-3"
           role="toolbar"
           aria-label="Filtrar por categoria"
         >

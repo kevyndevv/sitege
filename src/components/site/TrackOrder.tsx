@@ -61,7 +61,7 @@ export function TrackOrder({ businessName, whatsapp, pickupInfo }: Props) {
   return (
     <div className="grid gap-8 lg:grid-cols-[22rem_1fr] lg:items-start">
       <form
-        className="card space-y-4 p-5 sm:p-6 lg:sticky lg:top-24"
+        className="card space-y-4 p-5 sm:p-6 lg:sticky lg:top-[calc(var(--topo)+2rem)]"
         onSubmit={(e) => {
           e.preventDefault();
           lookup(phone);

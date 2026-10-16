@@ -25,11 +25,7 @@ export default async function PedidoPage() {
           informar seus dados — não precisa criar conta.
         </p>
 
-        {!settings.accepting_orders ? (
-          <p role="status" className="mt-6 rounded-2xl bg-alerta-fundo px-5 py-4 font-bold text-alerta">
-            {settings.closed_message || "No momento não estamos recebendo encomendas pelo site."}
-          </p>
-        ) : !canOrder ? (
+        {settings.accepting_orders && !canOrder ? (
           <p role="status" className="mt-6 rounded-2xl bg-alerta-fundo px-5 py-4 font-bold text-alerta">
             As encomendas pelo site abrem em breve.
           </p>

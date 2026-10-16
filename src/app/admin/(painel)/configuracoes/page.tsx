@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { publicImageUrl } from "@/lib/supabase/config";
-import type { AdminDeliveryZone, BusinessSettings } from "@/lib/types";
+import type { AdminDeliveryZone } from "@/lib/types";
+import { selectBusinessSettings } from "@/lib/data/settings-query";
 import { ZoneManager } from "@/components/admin/ZoneManager";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 
@@ -14,12 +15,7 @@ export default async function ConfiguracoesPage() {
     .order("sort_order")
     .order("name")
     .returns<AdminDeliveryZone[]>();
-  const { data: settings, error } = await supabase
-    .from("business_settings")
-    .select(
-      "business_name, hero_title, hero_text, about_text, logo_path, hero_image_path, instagram_handle, whatsapp_number, contact_email, city, opening_hours, accepting_orders, closed_message, offers_pickup, offers_delivery, pickup_info, delivery_info, delivery_fee_cents, min_lead_days, order_notice",
-    )
-    .maybeSingle<BusinessSettings>();
+  const { data: settings, error } = await selectBusinessSettings(supabase);
 
   if (error || !settings) {
     return (

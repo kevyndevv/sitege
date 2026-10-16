@@ -130,3 +130,9 @@ export const MoonIcon = (p: IconProps) => (
     <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
   </Svg>
 );
+export const PauseIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M10 9v6M14 9v6" />
+  </Svg>
+);

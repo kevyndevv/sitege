@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { getCatalog, getPopularProducts, getSettings } from "@/lib/data/public";
 import { publicImageUrl } from "@/lib/supabase/config";
+import { heroFrameOrDefault } from "@/lib/hero-frames";
+import { HeroFrame } from "@/components/site/HeroFrame";
 import { FormaPlaceholder } from "@/components/site/ProductImage";
 import { ProductCard } from "@/components/site/ProductCard";
 import { SiteShell } from "@/components/site/SiteShell";
@@ -37,35 +39,34 @@ export default async function HomePage() {
             <p className="mt-5 max-w-xl text-lg text-white/90 sm:text-xl">{text}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/pedido" className="btn btn-light min-h-14 px-8 text-lg">
-                Fazer pedido
+                {settings.accepting_orders ? "Fazer pedido" : "Ver cardápio"}
               </Link>
               <Link href="/acompanhar" className="btn min-h-14 border-2 border-white/50 text-white hover:bg-white/10">
                 Acompanhar meu pedido
               </Link>
             </div>
-            {!settings.accepting_orders && settings.closed_message ? (
-              <p className="mt-6 max-w-xl rounded-2xl bg-white/12 px-4 py-3 text-white">{settings.closed_message}</p>
-            ) : null}
           </div>
 
-          <div className="mx-auto w-full max-w-sm md:max-w-md">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-t-full border-[6px] border-white/25 bg-ameixa-funda">
-              {heroImage ? (
-                <Image
-                  src={heroImage}
-                  alt={`Encomendas de ${settings.business_name?.trim() || "doces e salgados"}`}
-                  fill
-                  priority
-                  sizes="(min-width: 768px) 28rem, 90vw"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <FormaPlaceholder className="h-32 w-auto text-white/60" />
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Foto com a moldura escolhida no painel (veja HeroFrame e .moldura-* em globals.css). */}
+          <HeroFrame
+            frame={heroFrameOrDefault(settings.hero_frame)}
+            className="mx-auto w-full max-w-sm text-[15px] sm:text-[16px] md:max-w-md md:text-[18px]"
+          >
+            {heroImage ? (
+              <Image
+                src={heroImage}
+                alt={`Encomendas de ${settings.business_name?.trim() || "doces e salgados"}`}
+                fill
+                priority
+                sizes="(min-width: 768px) 28rem, 90vw"
+                className="object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <FormaPlaceholder className="h-32 w-auto text-white/60" />
+              </div>
+            )}
+          </HeroFrame>
         </div>
       </section>
       <div className="scallop" aria-hidden="true" />
